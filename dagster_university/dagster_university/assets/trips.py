@@ -1,5 +1,7 @@
 import requests
 from . import constants
+import duckdb
+import os
 from dagster import asset
 
 
@@ -26,3 +28,29 @@ def taxi_zones_file() -> None:
 
     with open(constants.TAXI_ZONES_FILE_PATH, "wb") as output_file:
         output_file.write(raw_taxi_zones.content)
+
+
+@asset(deps=["taxi_trips_file"])
+def taxi_trips() -> None:
+    """
+    The raw taxi trips dataset, loaded into a DuckDB database
+    """
+    sql_query = """
+        CREATE OR REPLACE TABLE trips AS (
+            SELECT
+                VendorID AS vendor_id,
+                PULocationID AS pickup_zone_id,
+                DOLocationID AS dropoff_zone_id,
+                RatecodeID AS rate_code_id,
+                payment_type AS payment_type,
+                tpep_dropoff_datetime AS dropoff_datetime,
+                tpep_pickup_datetime AS pickup_datetime,
+                trip_distance AS trip_distance,
+                passenger_count AS passenger_count,
+                total_amount AS total_amount
+            FROM 'data/raw/taxi_trips_2023-03.parquet'
+        );
+    """
+
+    conn = duckdb.connect(os.getenv("DUCKDB_DATABASE"))
+    conn.execute(sql_query)
