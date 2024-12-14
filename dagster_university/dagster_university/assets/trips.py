@@ -1,4 +1,5 @@
 import requests
+from dagster_duckdb import DuckDBResource
 from . import constants
 import duckdb
 import os
@@ -31,11 +32,11 @@ def taxi_zones_file() -> None:
 
 
 @asset(deps=["taxi_trips_file"])
-def taxi_trips() -> None:
+def taxi_trips(database: DuckDBResource) -> None:
     """
     The raw taxi trips dataset, loaded into a DuckDB database
     """
-    sql_query = """
+    query = """
         CREATE OR REPLACE TABLE trips AS (
             SELECT
                 VendorID AS vendor_id,
@@ -52,8 +53,8 @@ def taxi_trips() -> None:
         );
     """
 
-    conn = duckdb.connect(os.getenv("DUCKDB_DATABASE"))
-    conn.execute(sql_query)
+    with database.get_connection() as conn:
+        conn.execute(query)
 
 
 @asset(deps=["taxi_zones_file"])
