@@ -54,3 +54,20 @@ def taxi_trips() -> None:
 
     conn = duckdb.connect(os.getenv("DUCKDB_DATABASE"))
     conn.execute(sql_query)
+
+
+@asset(deps=["taxi_zones_file"])
+def taxi_zones() -> None:
+    sql_query = f"""
+        create or replace table zones as (
+            select
+                LocationID as zone_id,
+                zone,
+                borough,
+                the_geom as geometry
+            from '{constants.TAXI_ZONES_FILE_PATH}'
+        );
+    """
+
+    conn = duckdb.connect(os.getenv("DUCKDB_DATABASE"))
+    conn.execute(sql_query)
