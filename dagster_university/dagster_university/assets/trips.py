@@ -58,8 +58,12 @@ def taxi_trips(database: DuckDBResource) -> None:
 
 
 @asset(deps=["taxi_zones_file"])
-def taxi_zones() -> None:
-    sql_query = f"""
+def taxi_zones(database: DuckDBResource) -> None:
+    """
+    The raw taxi zones dataset, loaded into a DuckDB database.
+    """
+
+    query = f"""
         create or replace table zones as (
             select
                 LocationID as zone_id,
@@ -70,5 +74,5 @@ def taxi_zones() -> None:
         );
     """
 
-    conn = duckdb.connect(os.getenv("DUCKDB_DATABASE"))
-    conn.execute(sql_query)
+    with database.get_connection() as conn:
+        conn.execute(query)
